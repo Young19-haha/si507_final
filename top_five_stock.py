@@ -1,11 +1,11 @@
-import requests, json
-import os.path
+import requests, json, sqlite3, operator, os.path
 from os import path
 from bs4 import BeautifulSoup
 from flask import Flask, render_template, request, url_for
-import menu_urls
-import operator
 from datetime import datetime
+import menu_urls
+import table_query
+# import time_record
 
 menu_links = menu_urls.MENU
 baseurl = "http://www.eoddata.com"
@@ -18,17 +18,60 @@ STOCK_DATA = 'stock_data.json'
 HEADERS = 'headers.json'
 MENU = 'menu.json'
 filename_list = [STOCK_DATA, HEADERS, MENU]
-recorded_time = datetime.now()
+# recorded_time = time_record.recorded_time[-1]
+TIME = 'time_record.json'
 
 
-def check_time(recorded_time):
-    now = datetime.now()
-    difference = now - recorded_time
-    munites = difference.seconds / 60
-    if munites > 60:
-        return False
+def data_process():
+    conn = sqlite3.connect('mystock.sqlite')
+    cur = conn.cursor()
+
+    cur.execute(table_query.drop_codes)
+    cur.execute(table_query.drop_NYSE)
+    cur.execute(table_query.create_codes)
+    cur.execute(table_query.create_NYSE)
+
+    for code, value in stock_data.items():
+        cur.execute(table_query.insert_codes, [code])
+
+    for code, value in stock_data.items():
+        NYSE = []
+        get_codeId = f"""
+            SELECT id from codes
+            WHERE code = "{code}";
+        """
+        cur.execute(get_codeId)
+        NYSE = [item[1] for item in value.items()][:3]
+        # print(NYSE)
+        for row in cur:
+            NYSE[0] = row[0]
+        # print(NYSE)
+        cur.execute(table_query.insert_NYSE, NYSE)
+
+    conn.commit()
+
+
+def check_time(): # false for request
+    result = False
+    if not path.exists(TIME):
+        now = datetime.now()
+        recorded_time = now.strftime("%m/%d/%Y, %H:%M:%S")
+        print(recorded_time)
+        time_list = [recorded_time]
+        write_to_file(TIME,time_list)
     else:
-        return True
+        time_list = read_file(TIME)
+        recorded_time_str = time_list[-1]
+        recorded_time = datetime.strptime(recorded_time_str, "%m/%d/%Y, %H:%M:%S")
+        now = datetime.now()
+        difference = now - recorded_time
+        munites = difference.seconds / 60
+        if munites > 60:
+            time_list.append(now.strftime("%m/%d/%Y, %H:%M:%S"))
+            json.dumps(time_list)
+        else:
+            result = True
+    return result
 
 def check_file_exist(filename_list):
     # 1. file does not exsit
@@ -39,9 +82,9 @@ def check_file_exist(filename_list):
         else:
             return False
 
-def write_to_file(filename, mydict):
+def write_to_file(filename, mydata):
     with open(filename,'w') as f:
-        json.dump(mydict, f)
+        json.dump(mydata, f)
 
 def read_file(filename):
     with open(filename,'r') as f:
@@ -52,7 +95,10 @@ def read_file(filename):
 # get stock symbol list
 def get_symbol_dicts(url):
     """get a list of dictionaries of symbols from url"""
-    recorded_time = datetime.now()
+    # new_recorded_time = datetime.now()
+    # print(new_recorded_time)
+    # time_record.recorded_time.append(new_recorded_time)
+    # print(time_record.recorded_time)
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
     table = soup.find('table', class_="quotes")
@@ -173,19 +219,19 @@ def watch_list():
 
 
 if __name__== '__main__':
-    for filename in filename_list:
-        if path.exists(filename):
-            os.remove(filename)
-    if not (check_file_exist(filename_list) and check_time(recorded_time)):
+    # for filename in filename_list:
+    #     if path.exists(filename):
+    #         os.remove(filename)
+    if not (check_file_exist(filename_list) and check_time()):
         headers, menu, stock_data = get_stock_symbol_menu()
         write_to_file(HEADERS, headers)
         write_to_file(MENU, menu)
         write_to_file(STOCK_DATA, stock_data)
-        recorded_time = datetime.now()
     else:
         headers = read_file(HEADERS)
         menu = read_file(MENU)
         stock_data = read_file(STOCK_DATA)
     top5 = today_top5()
+    data_process()
     app.run(debug=True)
     # pass
