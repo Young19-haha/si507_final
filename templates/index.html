@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HomePage</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <header id='header' class="header">
+        <h1>Welcom to MyStock</h1>
+    </header>
+    <div class="topnav">
+        <h3><a class="active" href="index.html">HomePage</a></h3>
+        <h3><a href="watchlist.html">Watchlist</a></h3>
+        <div class="search-container">
+            <form action="{{ url_for('search_result') }}">
+            <input type="text" placeholder="Search.." name="search" list="menu">
+            <datalist id="menu">
+                {% for item in menu %}<option>{{item}}</option>{% endfor %}
+            </datalist>
+            <button type="submit">Go</button>
+            </form>
+        </div>
+    </div>
+
+    <main>
+    <div id="top5 flex-item">
+        <div class='title'><h2>Today's Top 5</h2></div>
+        <table class="top5">
+            <tr>
+                {% for header in headers %}<th> {{header}} </th>{% endfor %}
+                <th> Add to Watchlist </th>
+            </tr>
+            {% for item in top5.items() %}
+            <tr>
+                {% for subitem in item[1].items() %}
+                    {% if subitem != "url" %}
+                    <td> {{subitem[1]}} </td>
+                    {% endif %}
+                {% endfor %}
+                <td>
+                    <form action="{{ url_for('add_to_watchlist') }}" method="POST">    
+                    <input type="submit" name="{{ item[1]['Code'] }}" value="&#128151;"/>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    </main>
+</body>
+</html>

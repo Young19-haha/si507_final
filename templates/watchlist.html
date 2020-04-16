@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HomePage</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <header id='header' class="header">
+        <h1>Welcom to MyStock</h1>
+    </header>
+    <div class="topnav">
+        <h3><a href="index.html">HomePage</a></h3>
+        <h3><a class="active" href="watchlist.html">Watchlist</a></h3>
+        <div class="search-container">
+            <form action="{{ url_for('search_result') }}">
+            <input type="text" placeholder="Search.." name="search" list="menu">
+            <datalist id="menu">
+                {% for item in menu %}<option>{{item}}</option>{% endfor %}
+            </datalist>
+            <button type="submit">Go</button>
+            </form>
+        </div>
+    </div>
+
+    <main>
+    <div id="watchlist-div">
+        <div class='title'><h2>Watchlist</h2></div>
+        {% if watchlist %}
+            <table>
+            <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Detail</th>
+            <tr>
+            {% for item in watchlist %}
+            <tr>
+                <td>{{ item['Code'] }}</td>
+                <td>{{ item['Name'] }}</td>
+                <td><a href="{{ item['url'] }}">&#9733;</a></td>
+            </tr>
+            {% endfor %}
+            </table>
+        {% else %}
+            <p>You have no items in your watchlist.</p>
+        {% endif %}
+
+    </div>
+    </main>
+
+</body>
+</html>

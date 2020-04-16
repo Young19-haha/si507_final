@@ -1,0 +1,40 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Form Response</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header id='header' class="header">
+        <h1>Welcom to MyStock</h1>
+    </header>
+    <div class="topnav">
+        <h3><a href="index.html">HomePage</a></h3>
+        <h3><a href="watchlist.html">Watchlist</a></h3>
+        <div class="search-container">
+            <form action="{{ url_for('search_result') }}">
+            <input type="text" placeholder="Search.." name="search" list="menu">
+            <datalist id="menu">
+                {% for item in menu %}<option>{{item}}</option>{% endfor %}
+            </datalist>
+            <button type="submit">Go</button>
+            </form>
+        </div>
+    </div>
+    <div class="search-result">
+        
+            {% if condition %}
+                <div>Code: {{ result['Code'] }}</div> 
+                <div>Name: {{ result['Name'] }}</div>
+                <div><a href="{{ result['url'] }}">Click here for more info</a></div>
+            {% endif %}
+        <form action="{{ url_for('add_to_watchlist') }}" method="POST">    
+            <input type="submit" name="{{ result['Code'] }}" value="Add to Watchlist"/>
+        </form>
+    </div>
+
+</body>
+</html>
