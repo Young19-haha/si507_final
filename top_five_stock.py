@@ -1,17 +1,58 @@
-import requests
-import json
+import requests, json
+import os.path
+from os import path
 from bs4 import BeautifulSoup
 from flask import Flask, render_template, request, url_for
 import menu_urls
 import operator
+from datetime import datetime
 
 menu_links = menu_urls.MENU
 baseurl = "http://www.eoddata.com"
 watchlist = []
+headers = []
+menu = []
+stock_data = {}
+top5 = {}
+STOCK_DATA = 'stock_data.json'
+HEADERS = 'headers.json'
+MENU = 'menu.json'
+filename_list = [STOCK_DATA, HEADERS, MENU]
+recorded_time = datetime.now()
+
+
+def check_time(recorded_time):
+    now = datetime.now()
+    difference = now - recorded_time
+    munites = difference.seconds / 60
+    if munites > 60:
+        return False
+    else:
+        return True
+
+def check_file_exist(filename_list):
+    # 1. file does not exsit
+    # pass
+    for filename in filename_list:
+        if path.exists(filename):
+            return True
+        else:
+            return False
+
+def write_to_file(filename, mydict):
+    with open(filename,'w') as f:
+        json.dump(mydict, f)
+
+def read_file(filename):
+    with open(filename,'r') as f:
+        data = json.load(f)
+    return data
+    #stock_data = read_file(filename)
 
 # get stock symbol list
 def get_symbol_dicts(url):
     """get a list of dictionaries of symbols from url"""
+    recorded_time = datetime.now()
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
     table = soup.find('table', class_="quotes")
@@ -36,8 +77,6 @@ def get_symbol_dicts(url):
 
 def get_stock_symbol_menu():
     """get menu list & get stock data dict"""
-    menu = []
-    stock_data = {}
     for url in menu_links:
         headers, data_list = get_symbol_dicts(url)
         for item in data_list:
@@ -52,95 +91,38 @@ def index1(high, low, close):
         return (close - low) / (high - low)
     except ZeroDivisionError:
         return 0
-    
 
-def index2(yesterday_volume, today_volume):
-    """higher index2 for more buyers; if >3 then there's something happened"""
-    try:
-        return (today_volume - yesterday_volume) / yesterday_volume
-    except ZeroDivisionError:
-        return 0
-    
-
-def assign_data(mydict, headers):
-    mylist = [item[1] for item in mydict.items()] # a list of values, 
-    #its length supposed to be the same as headers
-    my_data = {}
-    for i in range(len(headers)):
-        # print(detail_headers[i])
-        # print(mylist[i])
-        value = mylist[i]
-        # my_data[headers[i]] = float(value.replace(',','')) if value.isnumeric() else value
-        # my_data[headers[i]] = convert_str_to_num(value)
-        my_data[headers[i]] = value
-    # volume_list = my_data['Volume'].split(',')
-    # volume = 0
-    # if len(volume_list) == 3:
-    #     volume = volume_list[0] * 1000000 + volume_list[1] * 1000 + volume_list[2]
-    # elif len(volume_list) == 2:
-    #     volume = volume_list[0] * 1000 + volume_list[1]
-    # elif len(volume_list) == 1:
-    #     volume = volume_list[0]
-    # my_data['Volume'] = volume
-    return my_data
+# def index2(yesterday_volume, today_volume):
+#     """higher index2 for more buyers; if >3 then there's something happened"""
+#     try:
+#         return (today_volume - yesterday_volume) / yesterday_volume
+#     except ZeroDivisionError:
+#         return 0
 
 def calculate_():
     """return a dict of dicts of modified data with index1"""
-    # # get detail data fro each stock
-    # response = requests.get(url)
-    # soup = BeautifulSoup(response.text, 'html.parser')
-    # table = soup.find('table', class_="quotes")
-    # table_rows = table.find_all('tr')                                   # get all rows in the table
-    # detail_headers = [item.text.strip() for item in table_rows[0]][:-1] # get variable name for the table
-    # # print(detail_headers)
-    # data_rows = table_rows[1:3]                                         # get data from the table
-    # # print(data_rows)
-
-    # # for item in data_rows[0].find_all('td')[0].text.strip():
-    # #     for i in range(len(headers)):
-    # #         today_data[headers[i]] = item
-    # yesterday_data = assign_data(data_rows[1].find_all('td'), detail_headers)
-    # # for item in data_rows[1].find_all('td')[0].text.strip():
-    # #     for i in range(len(headers)):
-    # #         today_data[headers[i]] = item
-    # condition1 = index1(today_data['High'], today_data['Low'], today_data['Close'])
-    # condition2 = index2(yesterday_data['Volume'], today_data['Volume'])
     modified_data = {}
     for code, item_data in stock_data.items():
-        today_data = assign_data(item_data, headers)
-        # print(today_data)
-        condition1 = index1(today_data['High'], today_data['Low'], today_data['Close'])
+        # print(item_data)
+        # print(headers)
+        condition1 = index1(item_data['High'], item_data['Low'], item_data['Close'])
         modified_data[code] = condition1
-    # modified_data['condition2'] = condition2
+        # modified_data['condition2'] = condition2
     return modified_data
-
-
 
 def today_top5():
     """a list of dictionary of suggested stock with code, name, url 
     for today's top 5 stock you most want pay attention"""
-    # pass
-    # prepared_data = {}
-    # for code, stock in base_data.items():
-    #     prepared_data[code] = calculate_(stock['url'])
-    # items = prepared_data.items()
-    # sorted_data = sorted(items, key=lambda key_value: key_value[1]["condition1"], reverse=True)
-    max_index1 = 0.0
-    # max_index2 = 0.0
-    # top_code = []
-    # for code, indices in prepared_data.items():
-    #     if indices['condition2'] > 3:
-    #         top_code.append(code)
     prepared_data = calculate_()
-    top5 = {}
-    # for code, value in prepared_data.items():
-    #     if value.items()[1] > max_index1:
-    #     top5[code] = stock_data[code]
+    # print(prepared_data)
     sorted_data = dict(sorted(prepared_data.items(), key=operator.itemgetter(1),reverse=True))
+    # print(sorted_data)
     sorted_key = [item[0] for item in sorted_data.items()]
+    # print(sorted_key)
     for i in range(5):
         top5[sorted_key[i]] = stock_data[sorted_key[i]]
     return top5
+
 
 
 
@@ -167,6 +149,8 @@ def add_to_watchlist():
         if code in request.form and code not in [item['Code'] for item in watchlist]:
             # name = request.args[code]
             watchlist.append(stock_data[code])
+            with open('watchlist.json','w') as f:
+                json.dump(watchlist, f)
     return render_template('response.html', watchlist=watchlist)
 
 @app.route('/search_result', methods=['GET', 'POST']) # search response
@@ -189,12 +173,19 @@ def watch_list():
 
 
 if __name__== '__main__':
-    headers, menu, stock_data = get_stock_symbol_menu() # get menu list of dictionary with code, name, and url
-    # print(headers)
-    # print(stock_data[menu[0]])
-    # with open('menu.json','w') as f:
-        # f = json.dumps(menu)
-    # top5 = {'A':{"Code":"A","Name":"AAAAAA",'High':70,'Low':50,'Close':10,'Volumne':10000,'Change':155}} # get top 5 stock list of dictionary with code, name, and url
-    top5 = today_top5() 
+    for filename in filename_list:
+        if path.exists(filename):
+            os.remove(filename)
+    if not (check_file_exist(filename_list) and check_time(recorded_time)):
+        headers, menu, stock_data = get_stock_symbol_menu()
+        write_to_file(HEADERS, headers)
+        write_to_file(MENU, menu)
+        write_to_file(STOCK_DATA, stock_data)
+        recorded_time = datetime.now()
+    else:
+        headers = read_file(HEADERS)
+        menu = read_file(MENU)
+        stock_data = read_file(STOCK_DATA)
+    top5 = today_top5()
     app.run(debug=True)
     # pass

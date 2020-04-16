@@ -1,0 +1,6 @@
+menu_urls.py
+__pycache__
+stock_data.json
+headers.json
+menu.json
+watchlist.json

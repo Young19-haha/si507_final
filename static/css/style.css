@@ -12,17 +12,13 @@ div{
 main{margin: 50px 50px;}
 table, tr, th, td {
     border: 2px solid rgb(41, 148, 190);
-    width: 10px;
+    width: auto;
     text-align: center;
     align-items: center;
-    padding: 5px;
+    padding: 0 5px;
 }
-th{color: rgb(26, 89, 114);}
-table{
-    /* width:100%; */
-    text-align: left;
-    margin: 0 15px 0 15px;
-}
+th{background-color: rgb(26, 89, 114); color: white;}
+table{margin: 0 15px 0 15px;}
 .watch-list .title{text-align: center;}
 
 /* navbar */
