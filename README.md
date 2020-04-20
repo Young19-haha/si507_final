@@ -1,1 +1,2 @@
-# si507_final
+# Final Project for SI 507 (Intermediate Programming in Python)
+still processing...
