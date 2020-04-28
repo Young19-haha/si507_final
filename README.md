@@ -9,4 +9,5 @@ How to run the code:
 - Run file top_five_stock.py locally
 - Copy and paste the link presented in the terminal to your browser
 - You can search and save item in your watchlist
-- Each time you run the file, you are assumed to be a new user as default.
+- Your watchlist is preserved, even if you exit the page. 
+If you want to reset your watchlist, please delete file named "watchlist.json".
