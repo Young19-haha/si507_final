@@ -1,0 +1,11 @@
+menu_urls.py
+table_query.py
+mystock.sqlite
+
+__pycache__
+
+stock_data.json
+headers.json
+menu.json
+watchlist.json
+time_record.json
