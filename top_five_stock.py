@@ -1,8 +1,7 @@
-import requests, json, sqlite3, operator, os.path
+import requests, json, sqlite3, operator, random, os.path
 from os import path
 from bs4 import BeautifulSoup
 from flask import Flask, render_template, request, url_for
-from datetime import datetime
 import menu_urls
 import table_query
 # import time_record
@@ -18,8 +17,6 @@ STOCK_DATA = 'stock_data.json'
 HEADERS = 'headers.json'
 MENU = 'menu.json'
 filename_list = [STOCK_DATA, HEADERS, MENU]
-# recorded_time = time_record.recorded_time[-1]
-TIME = 'time_record.json'
 
 
 def data_process():
@@ -50,28 +47,6 @@ def data_process():
 
     conn.commit()
 
-
-def check_time(): # false for request
-    result = False
-    if not path.exists(TIME):
-        now = datetime.now()
-        recorded_time = now.strftime("%m/%d/%Y, %H:%M:%S")
-        print(recorded_time)
-        time_list = [recorded_time]
-        write_to_file(TIME,time_list)
-    else:
-        time_list = read_file(TIME)
-        recorded_time_str = time_list[-1]
-        recorded_time = datetime.strptime(recorded_time_str, "%m/%d/%Y, %H:%M:%S")
-        now = datetime.now()
-        difference = now - recorded_time
-        munites = difference.seconds / 60
-        if munites > 60:
-            time_list.append(now.strftime("%m/%d/%Y, %H:%M:%S"))
-            json.dumps(time_list)
-        else:
-            result = True
-    return result
 
 def check_file_exist(filename_list):
     # 1. file does not exsit
@@ -165,8 +140,15 @@ def today_top5():
     # print(sorted_data)
     sorted_key = [item[0] for item in sorted_data.items()]
     # print(sorted_key)
+    mytop = {}
+    for key in sorted_key:
+        if sorted_data[key] >= 1:
+            mytop[key] = stock_data[key]
+    # for i in range(5):
+    #     top5[sorted_key[i]] = stock_data[sorted_key[i]]
     for i in range(5):
-        top5[sorted_key[i]] = stock_data[sorted_key[i]]
+        top_key, top_value = random.choice(list(mytop.items()))
+        top5[top_key] = top_value
     return top5
 
 
@@ -197,7 +179,7 @@ def add_to_watchlist():
             watchlist.append(stock_data[code])
             with open('watchlist.json','w') as f:
                 json.dump(watchlist, f)
-    return render_template('response.html', watchlist=watchlist)
+    return render_template('response.html', watchlist=watchlist, menu=menu)
 
 @app.route('/search_result', methods=['GET', 'POST']) # search response
 def search_result():
@@ -209,20 +191,21 @@ def search_result():
             condition = True
     return render_template('search_response.html',
                             result=result,
-                            condition=condition)
+                            condition=condition,
+                            menu=menu)
 
 @app.route('/watchlist.html')
 def watch_list():
     return render_template('watchlist.html',
-                            watchlist=watchlist)
+                            watchlist=watchlist,
+                            menu=menu)
 
 
 
 if __name__== '__main__':
-    # for filename in filename_list:
-    #     if path.exists(filename):
-    #         os.remove(filename)
-    if not (check_file_exist(filename_list) and check_time()):
+    if check_file_exist(filename_list):
+        for filename in filename_list:
+            os.remove(filename)
         headers, menu, stock_data = get_stock_symbol_menu()
         write_to_file(HEADERS, headers)
         write_to_file(MENU, menu)
@@ -231,6 +214,7 @@ if __name__== '__main__':
         headers = read_file(HEADERS)
         menu = read_file(MENU)
         stock_data = read_file(STOCK_DATA)
+
     top5 = today_top5()
     data_process()
     app.run(debug=True)
