@@ -2,9 +2,10 @@ import requests, json, sqlite3, operator, random, os.path
 from os import path
 from bs4 import BeautifulSoup
 from flask import Flask, render_template, request, url_for
+from datetime import datetime, timedelta
 import menu_urls
 import table_query
-# import time_record
+
 
 menu_links = menu_urls.MENU
 baseurl = "http://www.eoddata.com"
@@ -18,6 +19,29 @@ HEADERS = 'headers.json'
 MENU = 'menu.json'
 filename_list = [STOCK_DATA, HEADERS, MENU]
 
+def check_time():
+    result = True
+    datetimeFormat = '%Y-%m-%d %H:%M:%S.%f'
+    time_in_record = ''
+    now = datetime.now()
+    recorded_time_list = []
+    recorded_time = now
+    if path.exists('time_record.json'):
+        recorded_time_list = read_file('time_record.json')
+        # print(recorded_time_list)
+        recorded_time = recorded_time_list[-1]
+        # print(type(recorded_time))
+        recorded_time = datetime.strptime(recorded_time, datetimeFormat) # str to datetime
+        # print(type(recorded_time))
+        
+    timedelta = now - recorded_time 
+    if timedelta.days * 24 * 3600 + timedelta.seconds > 3600:
+        result = False
+
+    time_in_record = now.strftime(datetimeFormat) # datetime to str
+    recorded_time_list.append(time_in_record)
+    write_to_file('time_record.json', recorded_time_list)
+    return result
 
 def data_process():
     conn = sqlite3.connect('mystock.sqlite')
@@ -203,9 +227,9 @@ def watch_list():
 
 
 if __name__== '__main__':
-    if check_file_exist(filename_list):
-        for filename in filename_list:
-            os.remove(filename)
+    if check_file_exist(filename_list) is False or check_time() is False:
+        # for filename in filename_list:
+        #     os.remove(filename)
         headers, menu, stock_data = get_stock_symbol_menu()
         write_to_file(HEADERS, headers)
         write_to_file(MENU, menu)
